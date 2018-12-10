@@ -1,49 +1,229 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+  <title>reveal.js</title>
 
-		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+  <link rel="stylesheet" href="css/reveal.css">
+  <link rel="stylesheet" href="css/theme/night.css">
 
-		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/zenburn.css">
+  <!-- Theme used for syntax highlighting of code -->
+  <link rel="stylesheet" href="lib/css/zenburn.css">
 
-		<!-- Printing and PDF exports -->
-		<script>
-			var link = document.createElement( 'link' );
-			link.rel = 'stylesheet';
-			link.type = 'text/css';
-			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
-			document.getElementsByTagName( 'head' )[0].appendChild( link );
-		</script>
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+  <!-- Printing and PDF exports -->
+  <script>
+    var link = document.createElement( 'link' );
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+    document.getElementsByTagName( 'head' )[0].appendChild( link );
+  </script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
+          # Python audio programming basics
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## What is sound, anyway?
+          - Waves of pressure
+          - Vibrations: oscillations about an equilibrium point
+          - Transmission medium: gas, liquid or solid
+          - Auditory sensation: eardrum
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Digital audio
+          - Quantization
+          - Sampling
 
-		<script src="lib/js/head.min.js"></script>
-		<script src="js/reveal.js"></script>
+          ![4-bit-linear-PCM](https://upload.wikimedia.org/wikipedia/commons/2/21/4-bit-linear-PCM.svg)
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI
+          - Musical Instrument Digital Interface
+          - no sound!
+          - communications protocol & connections standard
+          - hardware & software
+          - 16 channels per connection
+          - note information (no timbre!), control data
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## pattern-dump
+          ![pattern-dump diagram](assets/diagram.png)
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Opening MIDI port
+          <pre><code data-trim data-noescape>
+import rtmidi
 
-		<script>
-			// More info about config & dependencies:
-			// - https://github.com/hakimel/reveal.js#configuration
-			// - https://github.com/hakimel/reveal.js#dependencies
-			Reveal.initialize({
-				dependencies: [
-					{ src: 'plugin/markdown/marked.js' },
-					{ src: 'plugin/markdown/markdown.js' },
-					{ src: 'plugin/notes/notes.js', async: true },
-					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
-				]
-			});
-		</script>
-	</body>
+
+midi_out = rtmidi.MidiOut()
+ports = midi_out.get_ports()
+
+for idx, port in enumerate(ports):
+    print(f'{idx}: {port}')
+selected_port = input()
+
+midi_out.open_port(int(selected_port))
+print(midi_out.is_port_open())
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI notes
+          ![MIDI notes](https://newt.phys.unsw.edu.au/jw/graphics/notes.GIF)
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI notes cont'd
+          <pre><code data-trim data-noescape>
+midi_out.send_message([0x90, 60, 127])  # Channel 1, C4, velocity 127
+sleep(1)
+midi_out.send_message([0x80, 60, 0])  # Note off
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI control
+          <pre><code data-trim data-noescape>
+# Program change (patterns)
+pattern = 0  # pattern 1
+bank = 0  # bank A
+midi_out.send_message([0xC0, pattern + bank * 16])
+
+# Control Change (Continuous Controllers)
+midi_out.send_message([0xB0, 82, 127])  # Channel 1, control 82, value 127
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI sync
+          24 pulses per quater note
+          <pre><code data-trim data-noescape>
+midi_out.send_message([0xF8])  # clock
+midi_out.send_message([0xFA])  # start
+midi_out.send_message([0xFC])  # stop
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## MIDI sync problems
+          - What about sleep accuracy?
+            - [engine.py](https://github.com/mcjlnrtwcz/diquencer/blob/2315384dc962e0a25df60a07ec98b8ef5bc713c9/diquencer/engine.py#L19)
+            - https://stackoverflow.com/a/30672412
+            - http://i.stack.imgur.com/l8L9M.png
+          - Tempo drift
+          - DAW problems: first note not trigerred
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Sequencer
+          - Sequence as a list of events, trigerred at specified "pulsestamps"
+            - [events.py](https://github.com/mcjlnrtwcz/diquencer/blob/2315384dc962e0a25df60a07ec98b8ef5bc713c9/diquencer/events.py)
+            - [sequence.py](https://github.com/mcjlnrtwcz/diquencer/blob/2315384dc962e0a25df60a07ec98b8ef5bc713c9/diquencer/sequence.py#L60)
+          - Example
+            - [controller.py](https://github.com/mcjlnrtwcz/pattern-dump/blob/c7c8852571e1dfc4279f4c534d70a9d7b6546e97/controller.py#L40)
+            - [engine.py](https://github.com/mcjlnrtwcz/diquencer/blob/2315384dc962e0a25df60a07ec98b8ef5bc713c9/diquencer/engine.py#L60)
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Audio device initialization
+          <pre><code data-trim data-noescape>
+import sounddevice as sd
+
+
+print(sd.query_devices())
+device_idx = input()
+sd.default.device = device_idx  # Or iterable
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Playback and recording
+          <pre><code data-trim data-noescape>
+length = 5
+samplerate = 48000
+recording = sd.rec(
+    int(length * samplerate),
+    samplerate=samplerate,
+    channels=2,
+    blocking=True
+)
+sd.play(recording, samplerate)
+print(recording.T[0]200:300])
+          </code></pre>
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Device & stream settings
+          - https://github.com/mcjlnrtwcz/pattern-dump/blob/master/audio_recorder.py#L29
+          - https://github.com/mcjlnrtwcz/pattern-dump/blob/master/audio_recorder.py#L40
+          - https://python-sounddevice.readthedocs.io/en/0.3.12/api.html#sounddevice.RawStream
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Callback
+          - Efficient!
+          - I/O overflow
+          - Latency?
+          - https://github.com/mcjlnrtwcz/pattern-dump/blob/master/audio_recorder.py#L34
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Queue & consumer
+          - Python `wave` module
+          - https://github.com/mcjlnrtwcz/pattern-dump/blob/master/audio_recorder.py#L81
+        </textarea>
+      </section>
+      <section data-markdown>
+        <textarea data-template>
+          ## Performance issues
+          - Actual start of the stream?
+          - OSes, "backends" and drivers
+        </textarea>
+      </section>
+    </div>
+  </div>
+
+  <script src="lib/js/head.min.js"></script>
+  <script src="js/reveal.js"></script>
+
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 800,
+      dependencies: [
+        { src: 'plugin/markdown/marked.js' },
+        { src: 'plugin/markdown/markdown.js' },
+        { src: 'plugin/notes/notes.js', async: true },
+        { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+      ]
+    });
+  </script>
+</body>
 </html>
